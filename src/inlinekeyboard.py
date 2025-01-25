@@ -1,13 +1,22 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-builder = InlineKeyboardBuilder()
+postKeysbuilder = InlineKeyboardBuilder()
 
 # Add buttons
-builder.button(text="Yuborish", callback_data="action")
-builder.button(text="Bekor qilish", callback_data="rejection")
+postKeysbuilder.button(text="Yuborish ✅", callback_data="action")
+postKeysbuilder.button(text="Bekor qilish ❌", callback_data="rejection")
 
 # Arrange buttons in a row
-builder.adjust(2)
+postKeysbuilder.adjust(2)
 
 # Convert to InlineKeyboardMarkup
-post_inline = builder.as_markup()
+post_inline = postKeysbuilder.as_markup()
+
+adminKeysBuilder = InlineKeyboardBuilder()
+
+adminKeysBuilder.button(text="Tasdiqlash ✅", callback_data="accept")
+adminKeysBuilder.button(text="Bekor qilish ❌", callback_data="rejectionByAdmin")
+
+adminKeysBuilder.adjust(2)
+
+adminKeys=adminKeysBuilder.as_markup()

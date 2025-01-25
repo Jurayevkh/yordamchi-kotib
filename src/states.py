@@ -12,4 +12,11 @@ class Vacancy(StatesGroup):
     Company=State()
     Responsible=State()
     Comment=State()
+    Mention=State()
+    Post=State()
+    VerifyByAdmin=State()
 
+class Location(StatesGroup):
+    Title=State()
+    Latitude=State()
+    Longitude=State()
