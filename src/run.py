@@ -9,10 +9,12 @@ from aiogram.types import Message
 
 from currencyKeyboards import currencyMenu
 import states
-from states import Currency
+from inlinekeyboard import post_inline
+from states import Currency, Vacancy
 from conversionExchange import conversionCurrency
 from aiogram.fsm.context import FSMContext
 from keyboards import main_menu
+from translateTo import translateToSomeLang
 
 bot = Bot(token="8085414300:AAFwDAw72RYKsB9tzoN_AfrLtGRR8bLa8q0")
 dp = Dispatcher()
@@ -68,6 +70,75 @@ async def getAmount(message: Message, state:FSMContext):
     answer_msg=f"{message.text} {which_currency} = {result} {to_which_currency}"
     await message.answer(text=answer_msg, reply_markup=main_menu)
     await state.clear()
+
+################
+
+@dp.message(F.text=="Vakansiya ochish💼")
+async def CreateVacancy(message: Message, state: FSMContext):
+    await message.reply(text="Qidiralayotgan xodim lavozimi:")
+    await state.set_state(Vacancy.Title)
+
+@dp.message(Vacancy.Title)
+async def VacancyTitle(message: Message, state: FSMContext):
+   await state.update_data(Title=message.text)
+   await message.answer(text="Talablarni kiriting:")
+   await state.set_state(Vacancy.Requirements)
+
+@dp.message(Vacancy.Requirements)
+async def VacancyRequirements(message: Message, state: FSMContext):
+   await state.update_data(Requirements=message.text)
+   await message.answer(text="Taklif qilinayotgan maoshni kiriting:")
+   await state.set_state(Vacancy.Salary)
+
+@dp.message(Vacancy.Salary)
+async def VacancySalary(message: Message, state: FSMContext):
+   await state.update_data(Salary=message.text)
+   await message.answer(text="Kompaniya nomini kiriting:")
+   await state.set_state(Vacancy.Company)
+
+@dp.message(Vacancy.Company)
+async def VacancyCompany(message: Message, state: FSMContext):
+   await state.update_data(Company=message.text)
+   await message.answer(text="Murojaat uchun ma'sul shaxs ma'lumotalari(telefon raqam/telegram hisob):")
+   await state.set_state(Vacancy.Responsible)
+
+@dp.message(Vacancy.Responsible)
+async def VacancyResponsible(message: Message, state: FSMContext):
+   await state.update_data(Responsible=message.text)
+   await message.answer(text="Qo'shimcha izoh:")
+   await state.set_state(Vacancy.Comment)
+
+@dp.message(Vacancy.Comment)
+async def VacancyComment(message: Message, state: FSMContext):
+   data = await state.get_data()
+   title = data.get("Title")
+   requirements = data.get("Requirements")
+   salary = data.get("Salary")
+   company = data.get("Company")
+   responsible = data.get("Responsible")
+   comment = message.text
+
+   msg = (
+       f"Lavozim:{title}\n"
+       f"Talablar:{requirements}\n"
+       f"Maosh:{salary}\n"
+       f"Kompaniya:{company}\n"
+       f"Ma'sul shaxs:{responsible}\n"
+       f"Qo'shimcha izoh:{comment}\n"
+   )
+
+   # russian=translateToSomeLang(msg,"ru")
+   # english=translateToSomeLang(msg,"en")
+   # msg+=russian
+   # msg+=english
+
+   await message.answer(text=msg, reply_markup=post_inline)
+
+   await state.clear()
+
+
+
+
 
 
 async def main():
