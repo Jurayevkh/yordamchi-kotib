@@ -20,3 +20,8 @@ class Location(StatesGroup):
     Title=State()
     Latitude=State()
     Longitude=State()
+
+class Card(StatesGroup):
+    CardName=State()
+    CardNumber=State()
+    CardOwner=State()

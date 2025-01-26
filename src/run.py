@@ -7,7 +7,7 @@ from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, InlineQuery, \
-    InlineQueryResultLocation
+    InlineQueryResultLocation, InputMessageContent, InlineQueryResultArticle
 
 from InlineModeKeyboards import locationOrCard
 from currencyKeyboards import currencyMenu
@@ -16,9 +16,9 @@ from database.models import async_main
 import database.requests as request
 from config import ADMINS
 import states
-from database.requests import get_locationsByUserID
+from database.requests import get_locationsByUserID, get_cardsByUserID
 from inlinekeyboard import post_inline, adminKeys
-from states import Currency, Vacancy, Location
+from states import Currency, Vacancy, Location, Card
 from conversionExchange import conversionCurrency
 from aiogram.fsm.context import FSMContext
 from keyboards import main_menu, verifyKeyboards
@@ -167,30 +167,73 @@ async def GetLocation(message: Message, state: FSMContext):
         await request.set_location(message.from_user.id,title,message.location.latitude,message.location.longitude)
         await state.update_data(Latitude=message.location.latitude)
         await state.update_data(Longitude=message.location.longitude)
-        await message.reply(f"Bu qayerni manzili? {message.location.latitude} {message.location.longitude}")
+        await message.reply("Manzil muvaffaqiyatli saqlandi ✅", reply_markup=main_menu)
+        await state.clear()
     else:
-        await message.reply("Bu manzil emas, manzil yuboring")
+        await message.reply("Bu manzil emas, manzil yuboring!")
 
 @dp.inline_query()
 async def show_datas(inline_query: InlineQuery):
     locations=await get_locationsByUserID(inline_query.from_user.id)
-    print(locations)
 
     results=[]
     for location in locations:
-        results.append(InlineQueryResultLocation(
-            id=str(location.id),
-            latitude=location.latitude,
-            longitude=location.longitude,
-            title=location.title
-        ))
+        if (location.user_id == inline_query.from_user.id):
+            results.append(InlineQueryResultLocation(
+                id=str(location.id),
+                latitude=location.latitude,
+                longitude=location.longitude,
+                description=location.title,
+                title=location.title
+            ))
+        print("-----")
 
-    # result=[
-    #     InlineQueryResultLocation(id="001",latitude=41.332275574486246, longitude=69.27493543669588 ,title="Minor Masjidi"),
-    #     InlineQueryResultLocation(id="002",latitude=41.32731276661643, longitude=69.28338975906, title="Minor metrosi")
-    # ]
     await bot.answer_inline_query(inline_query.id, results)
 
+@dp.message(F.text=="Karta ma'lumotini saqlash💳")
+async def StartSaveCard(message: Message, state: FSMContext):
+    await message.reply("Karta nomini kiriting:")
+    await state.set_state(Card.CardName)
+
+@dp.message(Card.CardName)
+async def AskCardNumber(message:Message, state:FSMContext):
+    await state.update_data(CardName=message.text)
+    await message.reply("Karta raqamini kiriting:")
+    await state.set_state(Card.CardNumber)
+
+@dp.message(Card.CardNumber)
+async def AskCardOwner(message:Message, state:FSMContext):
+    await state.update_data(CardNumber=message.text)
+    await message.reply("Karta egasini kiriting:")
+    await state.set_state(Card.CardOwner)
+
+@dp.message(Card.CardOwner)
+async def GetCardData(message:Message, state: FSMContext):
+    await state.update_data(CardOwner=message.text)
+    data = await state.get_data()
+    cardName=data.get("CardName")
+    cardNumber=data.get("CardNumber")
+    cardOwner=message.text
+    await request.set_card(message.from_user.id,cardName,cardNumber,cardOwner)
+    await message.reply("Karta muvaffaqiyatli saqlandi ✅", reply_markup=main_menu)
+
+@dp.inline_query(F.query == "Kartalar")
+async def show_cardDatas(inline_query: InlineQuery):
+    cards=await get_cardsByUserID(inline_query.from_user.id)
+
+    results=[]
+    for card in cards:
+        if (card.user_id == inline_query.from_user.id):
+            results.append(InlineQueryResultArticle(
+                id=str(card.id),
+                title=card.cardname,
+                input_message_content=InputMessageContent(
+                    message_text = f"Karta nomi:{card.cardname}\n\nKarta raqami:{card.cardnumber}\n\n{card.cardowner}"),
+                description=f"{card.cardnumber} -- {card.cardowner}"
+            ))
+        print("!!!!")
+
+    await bot.answer_inline_query(inline_query.id, results)
 
 # @dp.message(Vacancy.Comment)
 # async def VacancyComment(message: Message, state: FSMContext):

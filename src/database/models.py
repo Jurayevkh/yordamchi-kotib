@@ -24,6 +24,15 @@ class Location(Base):
     latitude: Mapped[float]=mapped_column(Float)
     longitude: Mapped[float]=mapped_column(Float)
 
+class Card(Base):
+    __tablename__ = 'cards'
+
+    id: Mapped[int]=mapped_column(primary_key=True)
+    user_id = mapped_column(BigInteger)
+    cardname: Mapped[str]=mapped_column(String)
+    cardnumber: Mapped[str]=mapped_column(String)
+    cardowner: Mapped[str]=mapped_column(String)
+
 async def async_main():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
