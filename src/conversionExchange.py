@@ -9,4 +9,6 @@ def conversionCurrency(which_currency: str,to_which_currency: str,amount: float)
 
     jsondata = response.json()
     kurs = jsondata["conversion_rate"]
-    return amount*kurs
+    rounded_value=round(float(amount*kurs), 3)
+    formatted_value = f"{rounded_value:,.2f}"
+    return formatted_value

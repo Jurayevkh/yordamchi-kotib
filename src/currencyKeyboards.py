@@ -8,5 +8,9 @@ currencyMenu=ReplyKeyboardMarkup(keyboard=[
     [
         KeyboardButton(text="🇪🇺EUR"),
         KeyboardButton(text="🇷🇺RUB")
+    ],
+    [
+        KeyboardButton(text="🇰🇿KZT"),
+        KeyboardButton(text="🇰🇬KGS")
     ]
 ], resize_keyboard=True)

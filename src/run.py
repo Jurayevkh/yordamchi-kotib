@@ -1,28 +1,21 @@
 import asyncio
-from operator import contains
 
-import aiogram
-
-from aiogram import Bot, Dispatcher, F, Router
-from aiogram.filters import Command, CommandStart, StateFilter
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, InlineQuery, \
-    InlineQueryResultLocation, InputMessageContent, InlineQueryResultArticle
-
-from InlineModeKeyboards import locationOrCard
-from currencyKeyboards import currencyMenu
-
-from database.models import async_main
-import database.requests as request
-from config import ADMINS
-import states
-from database.requests import get_locationsByUserID, get_cardsByUserID
-from inlinekeyboard import post_inline, adminKeys
-from states import Currency, Vacancy, Location, Card
-from conversionExchange import conversionCurrency
+from aiogram import Bot, Dispatcher, F
+from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
-from keyboards import main_menu, verifyKeyboards
-from translateTo import translateToSomeLang
+from aiogram.types import Message, CallbackQuery, InlineQuery, \
+    InlineQueryResultLocation
+
+import database.requests as request
+from InlineModeKeyboards import locationOrCard
+from config import ADMINS
+from conversionExchange import conversionCurrency
+from currencyKeyboards import currencyMenu
+from database.models import async_main
+from database.requests import get_locationsByUserID
+from inlinekeyboard import post_inline, adminKeys
+from keyboards import main_menu
+from states import Currency, Vacancy, Location, Card
 
 bot = Bot(token="8085414300:AAFwDAw72RYKsB9tzoN_AfrLtGRR8bLa8q0")
 dp = Dispatcher()
@@ -50,7 +43,7 @@ async def CurrencyCommand(message: Message, state: FSMContext):
 
 @dp.message(Currency.which_currency)
 async def getCurrency(message: Message, state: FSMContext):
-    if(message.text not in ["🇺🇿UZS","🇺🇸USD","🇪🇺EUR","🇷🇺RUB"]):
+    if(message.text not in ["🇺🇿UZS","🇺🇸USD","🇪🇺EUR","🇷🇺RUB","🇰🇿KZT","🇰🇬KGS"]):
         await message.reply(text="Noto'g'ri ma'lumot yubordingiz, quyidagi valyutalardan birini tanlang:", reply_markup=currencyMenu)
         return
     currency = message.text[2:]
@@ -60,7 +53,7 @@ async def getCurrency(message: Message, state: FSMContext):
 
 @dp.message(Currency.to_which_currency)
 async def getToWhichCurrency(message: Message, state: FSMContext):
-    if(message.text not in ["🇺🇿UZS","🇺🇸USD","🇪🇺EUR","🇷🇺RUB"]):
+    if(message.text not in ["🇺🇿UZS","🇺🇸USD","🇪🇺EUR","🇷🇺RUB","🇰🇿KZT","🇰🇬KGS"]):
         await message.reply(text="Noto'g'ri ma'lumot yubordingiz, quyidagi valyutalardan birini tanlang:", reply_markup=currencyMenu)
         return
     currency = message.text[2:]
