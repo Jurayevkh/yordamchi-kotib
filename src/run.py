@@ -4,18 +4,21 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, InlineQuery, \
-    InlineQueryResultLocation
+    InlineQueryResultLocation, InlineKeyboardButton, InlineKeyboardMarkup
 
+from datetime import date, timedelta
+import datetime
 import database.requests as request
 from InlineModeKeyboards import locationOrCard
 from config import ADMINS
+from calendar import month_name
 from conversionExchange import conversionCurrency
 from currencyKeyboards import currencyMenu
 from database.models import async_main
-from database.requests import get_locationsByUserID
+from database.requests import get_locationsByUserID, post_meeting
 from inlinekeyboard import post_inline, adminKeys
 from keyboards import main_menu
-from states import Currency, Vacancy, Location, Card
+from states import Currency, Vacancy, Location, Card, Meeting
 
 bot = Bot(token="8085414300:AAFwDAw72RYKsB9tzoN_AfrLtGRR8bLa8q0")
 dp = Dispatcher()
@@ -259,6 +262,122 @@ async def rejectPostByAdmin(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer("Post rad etildi.", show_alert=True)
     await callback.message.edit_reply_markup()
+
+
+
+
+@dp.message(F.text=="Uchrashuv belgilash⏰")
+async def ScheduleMeeting(message: Message, state: FSMContext):
+    calendar = generate_calendar()
+    await message.answer("Please pick a date:", reply_markup=calendar)
+    await state.set_state(Meeting.Date)
+
+
+@dp.callback_query(F.data.startswith("calendar_nav:"), Meeting.Date)
+async def handle_calendar_navigation(callback: CallbackQuery, state: FSMContext):
+    _, offset = callback.data.split(":")
+    offset = int(offset)
+
+    calendar = generate_calendar(month_offset=offset)
+
+    await callback.message.edit_reply_markup(reply_markup=calendar)
+    await state.set_state(Meeting.Date)
+    
+@dp.callback_query(F.data.startswith("calendar:"))
+async def handle_calendar_day(callback: CallbackQuery, state: FSMContext):
+    _, month, day = callback.data.split(":")
+    current_year = date.today().year
+
+    selected_date = date(current_year, int(month), int(day))
+
+    await state.update_data(selected_date=selected_date)
+
+    await callback.message.edit_text(f"Siz: {selected_date.strftime('%B %d, %Y')} tanladingiz.")
+
+    await callback.message.reply("Endi, iltimos, uchrashuv vaqtini yuboring (SS:MM)")
+
+    await state.set_state(Meeting.Time)
+
+@dp.message(Meeting.Time)
+async def handle_meeting_time(message: Message, state: FSMContext):
+    try:
+        meeting_time = datetime.strptime(message.text, "%H:%M").time()
+        #meeting_datetime = datetime.combine(selected_date, meeting_time)
+
+        await state.update_data(meeting_time=meeting_time)
+        await message.reply("Endi uchrashuvni nomini kiriting")
+        await state.set_state(Meeting.Name)
+        #await message.answer(f"Uchrashuv {meeting_datetime.strftime('%B %d, %Y at %H:%M')}. ga belgilandi✅")
+    except ValueError:
+        await message.reply("Iltimos, HH:MM formatida kiriting.")
+
+@dp.message(Meeting.Name)
+async def handle_meeting_name(message: Message, state: FSMContext):
+    meeting_name = message.text
+    await state.update_data(meeting_name=meeting_name)
+
+    await message.reply("Uchrashuv uchun qisqacha tavsif kiriting:")
+    await state.set_state(Meeting.Description)
+
+@dp.message(Meeting.Description)
+async def handle_meeting_description(message: Message, state: FSMContext):
+    data = await state.get_data()
+    meeting_date = data.get("selected_date")
+    meeting_time = data.get("meeting_time")
+    meeting_name = data.get("meeting_name")
+
+    meeting_description = message.text
+    if meeting_description.lower() == "o'tkazib yuborish":
+        meeting_description = "Tavsif yo'q"
+
+    meeting_datetime = datetime.combine(meeting_date, meeting_time)
+
+    await post_meeting(
+        user_id=message.from_user.id,
+        name=meeting_name,
+        date=meeting_date,
+        time=meeting_time,
+        description=meeting_description
+    )
+
+    await message.reply(
+        f"Uchrashuv belgilandi ✅\n\n"
+        f"📅 Sana: {meeting_datetime.strftime('%B %d, %Y')}\n"
+        f"⏰ Vaqt: {meeting_datetime.strftime('%H:%M')}\n"
+        f"📝 Nomi: {meeting_name}\n"
+        f"✏️ Tavsif: {meeting_description}"
+    )
+
+    await state.clear()
+
+
+def generate_calendar(month_offset=0):
+    today = date.today()
+
+    target_month = (today.replace(day=1) + timedelta(days=32 * month_offset)).month
+    target_year = (today.replace(day=1) + timedelta(days=32 * month_offset)).year
+
+    first_day_of_month = date(target_year, target_month, 1)
+    last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    current_day = today.day if month_offset == 0 else 1
+
+    rows = [[InlineKeyboardButton(text=f"{month_name[target_month]} {target_year}", callback_data="ignore")]]
+
+    days = [
+        InlineKeyboardButton(text=str(day), callback_data=f"calendar:{target_month}:{day}")
+        for day in range(current_day, last_day_of_month.day + 1)
+    ]
+
+    rows.extend([days[i:i+7] for i in range(0, len(days), 7)])
+
+    rows.append([
+        InlineKeyboardButton(text="⬅️", callback_data=f"calendar_nav:{month_offset-1}"),
+        InlineKeyboardButton(text="➡️", callback_data=f"calendar_nav:{month_offset+1}")
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 
 async def main():
     await async_main()

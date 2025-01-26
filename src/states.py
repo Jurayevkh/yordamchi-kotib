@@ -25,3 +25,10 @@ class Card(StatesGroup):
     CardName=State()
     CardNumber=State()
     CardOwner=State()
+
+class Meeting(StatesGroup):
+    Name=State()
+    Date=State()
+    Time=State()
+    Description=State()
+    

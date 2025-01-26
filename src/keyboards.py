@@ -15,3 +15,9 @@ verifyKeyboards=ReplyKeyboardMarkup(keyboard=[
     [ KeyboardButton(text="Chop etishga tasdiqlash ✅"),
         KeyboardButton(text="Bekor qilish ❌")]
 ], resize_keyboard=True)
+
+cancel_keyboard = ReplyKeyboardMarkup(keyboard=[
+    [
+        KeyboardButton(text="Bekor qilish❌")
+    ]
+])

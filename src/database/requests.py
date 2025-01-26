@@ -1,5 +1,5 @@
 from database.models import async_session
-from database.models import User, Location, Card
+from database.models import User, Location, Card, Meeting
 from sqlalchemy import select
 
 async def set_user(tg_id):
@@ -45,3 +45,18 @@ async def get_cardsByUserID(user_id):
     # title: Mapped[str] = mapped_column(String)
     # latitude: Mapped[float] = mapped_column(Float)
     # longitude: Mapped[float] = mapped_column(Float)
+    
+    
+async def post_meeting(user_id, name, date, time, description):
+    async with async_session() as session:
+        async with session.begin():  
+            new_meeting = Meeting(
+                user_id=user_id,
+                name=name,
+                date=date,
+                time=time,
+                description=description
+            )
+            session.add(new_meeting)  
+        await session.commit() 
+    
