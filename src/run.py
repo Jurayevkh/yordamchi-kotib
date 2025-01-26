@@ -39,6 +39,10 @@ async def say_hello(message: Message):
     )
     await message.reply(text=msg, parse_mode="HTML", reply_markup=main_menu)
 
+# @dp.message(F.text=="Uchrashuv belgilash⏰")
+# async def TimeManagingStart(message: Message):
+
+
 @dp.message(F.text=="Valyuta💱")
 async def CurrencyCommand(message: Message, state: FSMContext):
     await message.reply(text="Qiymatni kiritmoqchi bo'lgan valyutangizni tanlang", reply_markup=currencyMenu)
@@ -54,10 +58,6 @@ async def getCurrency(message: Message, state: FSMContext):
     await state.set_state(Currency.to_which_currency)
     await message.answer(text="Qaysi valyutada hisoblamoqchisiz")
 
-    # result=conversionCurrency(float(amount))
-    # answer_message=f"{amount} dollarda ${result} bo'ladi"
-    # await message.reply(text=answer_message)
-    # await state.clear()
 @dp.message(Currency.to_which_currency)
 async def getToWhichCurrency(message: Message, state: FSMContext):
     if(message.text not in ["🇺🇿UZS","🇺🇸USD","🇪🇺EUR","🇷🇺RUB"]):
@@ -118,31 +118,6 @@ async def VacancyResponsible(message: Message, state: FSMContext):
    await message.answer(text="Qo'shimcha izoh:")
    await state.set_state(Vacancy.Comment)
 
-
-@dp.message(Vacancy.Comment)
-async def VacancyComment(message: Message, state: FSMContext):
-   data = await state.get_data()
-   title = data.get("Title")
-   requirements = data.get("Requirements")
-   salary = data.get("Salary")
-   company = data.get("Company")
-   responsible = data.get("Responsible")
-   comment = message.text
-
-   msg = (
-       f"Lavozim:{title}\n"
-       f"Talablar:{requirements}\n"
-       f"Maosh:{salary}\n"
-       f"Kompaniya:{company}\n"
-       f"Ma'sul shaxs:{responsible}\n"
-       f"Qo'shimcha izoh:{comment}\n"
-   )
-
-   await message.answer(text=msg, reply_markup=post_inline)
-
-   await state.clear()
-
-##########################################
 
 @dp.message(F.text=="Ma'lumotlarni inlinega saqlash📍")
 async def SaveDataToInline(message: Message):
@@ -234,23 +209,6 @@ async def GetAllCards(message:Message):
     for card in cards:
         await message.answer(text=f"<b>Karta nomi:</b> {card.cardname}\n\n<b>Karta raqam:</b> {card.cardnumber}\n\n<b>Karda egasi:</b> {card.cardowner}", parse_mode="HTML")
 
-# @dp.inline_query(F.query == "Kartalar")
-# async def show_cardDatas(inline_query: InlineQuery):
-#     cards=await get_cardsByUserID(inline_query.from_user.id)
-#
-#     results=[]
-#     for card in cards:
-#         if (card.user_id == inline_query.from_user.id):
-#             results.append(InlineQueryResultArticle(
-#                 id=str(card.id),
-#                 title=card.cardname,
-#                 input_message_content=InputMessageContent(
-#                     message_text = f"Karta nomi:{card.cardname}\n\nKarta raqami:{card.cardnumber}\n\n{card.cardowner}"),
-#                 description=f"{card.cardnumber} -- {card.cardowner}"
-#             ))
-#         print("!!!!")
-#
-#     await bot.answer_inline_query(inline_query.id, results)
 
 @dp.message(Vacancy.Comment)
 async def VacancyComment(message: Message, state: FSMContext):
@@ -275,58 +233,27 @@ async def VacancyComment(message: Message, state: FSMContext):
    await state.update_data(Post=msg)
    msg+="Ushbu postni tasdiqlashga yuborasizmi?"
 
+   print("Post 1")
+
    await message.answer(text=msg, reply_markup=post_inline)
 
+@dp.callback_query(F.data == "action", Vacancy.Comment)
+async def sendPostToAdmin(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    print("Post 2")
+    post = data.get("Post")
+    mention = data.get("Mention")
+    msg = f"Foydalanuvchi {mention} quyidagi postni yubormoqchi:\n\n"
+    msg += post
+    await bot.send_message(chat_id=ADMINS, text=msg, parse_mode="HTML", reply_markup=adminKeys)
+    await state.set_state(Vacancy.VerifyByAdmin)
 
-
-# @dp.callback_query(F.data == "accept")
-# async def acceptPost(callback: CallbackQuery, state: FSMContext):
-#     data = await state.get_data()
-#     post = data.get("Post")
-#
-#     # Send to channel if accepted
-#     await bot.send_message(chat_id="@kotib_vakansiyalar", text=post)
-#     await callback.answer("Post kanalga joylandi", show_alert=True)
-
-# @dp.callback_query(F.data == "accept", Vacancy.Comment)
-# async def sendPostToChannel(callback: CallbackQuery, state: FSMContext):
-#     data = await state.get_data()
-#     post = data.get("Post")
-#     mention = data.get("Mention")
-#     msg = f"Foydalanuvchi {mention} quyidagi postni yubormoqchi:\n\n"
-#     msg += post
-#     await bot.send_message(chat_id=ADMINS, text=msg, parse_mode="HTML", reply_markup=adminKeys)
-#     if(F.data=="accept"):
-#         print("Admin tasdiqladi")
-#         await bot.send_message(chat_id="@kotib_vakansiyalar",text=post)
-#         await callback.answer("Post kanalga joylandi", show_alert=True)
-
-#####################################
-
-# @dp.callback_query(F.data=="action", Vacancy.Comment)
-# async def sendPostToAdmin(callback: CallbackQuery, state: FSMContext):
-#     data = await state.get_data()
-#     post = data.get("Post")
-#     await sendPostToChannel(callback, state)
-#
-#
-
-#############################
-
-# @dp.callback_query(F.data == "action", Vacancy.Comment)
-# async def sendPostToAdmin(callback: CallbackQuery, state: FSMContext):
-#     data = await state.get_data()
-#     post = data.get("Post")
-#     mention = data.get("Mention")
-#     msg = f"Foydalanuvchi {mention} quyidagi postni yubormoqchi:\n\n"
-#     msg += post
-#
-#     # Send to admin
-#     await bot.send_message(chat_id=ADMINS, text=msg, parse_mode="HTML", reply_markup=adminKeys)
-#     await callback.answer("Post admin uchun yuborildi. Iltimos, tasdiqlang.")
-#
-#
-
+@dp.callback_query(F.data == "accept", Vacancy.VerifyByAdmin)
+async def sendtPostToChannel(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    post = data.get("Post")
+    await bot.send_message(chat_id="@kotib_vakansiyalar", text=post)
+    await callback.answer("Post kanalga joylandi", show_alert=True)
 
 
 async def main():
