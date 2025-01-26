@@ -85,37 +85,37 @@ async def getAmount(message: Message, state:FSMContext):
 
 @dp.message(F.text=="Vakansiya ochish💼")
 async def CreateVacancy(message: Message, state: FSMContext):
-    await message.reply(text="Qidiralayotgan xodim lavozimi:")
+    await message.reply(text="<b>👨‍💼Xodim:</b>\n\n<i>Qidiralayotgan xodim lavozimi(Misol uchun dasturchi, mobilograf):</i>", parse_mode="HTML")
     await state.set_state(Vacancy.Title)
 
 @dp.message(Vacancy.Title)
 async def VacancyTitle(message: Message, state: FSMContext):
    await state.update_data(Title=message.text)
-   await message.answer(text="Talablarni kiriting:")
+   await message.answer(text="<b>📑Talablar:</b>\n\n<i>Talab qilinadigan soft va hard skillarni kiriting:</i>", parse_mode="HTML")
    await state.set_state(Vacancy.Requirements)
 
 @dp.message(Vacancy.Requirements)
 async def VacancyRequirements(message: Message, state: FSMContext):
    await state.update_data(Requirements=message.text)
-   await message.answer(text="Taklif qilinayotgan maoshni kiriting:")
+   await message.answer(text="<b>💵Maosh:</b>\n\n<i>Taklif qilinayotgan maoshni kiriting:</i>", parse_mode="HTML")
    await state.set_state(Vacancy.Salary)
 
 @dp.message(Vacancy.Salary)
 async def VacancySalary(message: Message, state: FSMContext):
    await state.update_data(Salary=message.text)
-   await message.answer(text="Kompaniya nomini kiriting:")
+   await message.answer(text="<b>🏢Kompaniya nomini kiriting:</b>", parse_mode="HTML")
    await state.set_state(Vacancy.Company)
 
 @dp.message(Vacancy.Company)
 async def VacancyCompany(message: Message, state: FSMContext):
    await state.update_data(Company=message.text)
-   await message.answer(text="Murojaat uchun ma'sul shaxs ma'lumotalari(telefon raqam/telegram hisob):")
+   await message.answer(text="<b>📞Aloqa:</b>\n\n<i>Murojaat uchun ma'sul shaxs telefon raqami:</i>", parse_mode="HTML")
    await state.set_state(Vacancy.Responsible)
 
 @dp.message(Vacancy.Responsible)
 async def VacancyResponsible(message: Message, state: FSMContext):
    await state.update_data(Responsible=message.text)
-   await message.answer(text="Qo'shimcha izoh:")
+   await message.answer(text="<b>✍️Qo'shimcha izoh:</b>\n\n<i>Ish, bo'sh ish o'rni, taklif kabilarni yozib qoldiring</i>", parse_mode="HTML")
    await state.set_state(Vacancy.Comment)
 
 
@@ -221,26 +221,26 @@ async def VacancyComment(message: Message, state: FSMContext):
    comment = message.text
 
    msg = (
-       f"Lavozim: {title}\n"
-       f"Talablar: {requirements}\n"
-       f"Maosh: {salary}\n"
-       f"Kompaniya: {company}\n"
-       f"Ma'sul shaxs: {responsible}\n"
-       f"Qo'shimcha izoh: {comment}\n\n"
+       f"<b>Xodim qidirilmoqda!</b>\n\n"
+       f"<b>👨‍💼Lavozim:</b> {title}\n"
+       f"<b>📑Talablar</b>: {requirements}\n"
+       f"<b>💵Maosh:</b> {salary}\n"
+       f"<b>🏢Kompaniya:</b> {company}\n"
+       f"<b>📞Aloqa:</b>: {responsible}\n"
+       f"<b>✍️Qo'shimcha izoh:</b> {comment}\n\n"
+       f"@yordamchi_kotib_bot - sizning biznes yordamchingiz\n"
+       "@kotib_vakansiyalar - orzuingdagi ishni top"
    )
 
    await state.update_data(Mention=f"""<a href="tg://user?id={message.from_user.id}">{message.from_user.full_name}</a>""")
    await state.update_data(Post=msg)
    msg+="Ushbu postni tasdiqlashga yuborasizmi?"
 
-   print("Post 1")
-
-   await message.answer(text=msg, reply_markup=post_inline)
+   await message.answer(text=msg,parse_mode="HTML",reply_markup=post_inline)
 
 @dp.callback_query(F.data == "action", Vacancy.Comment)
 async def sendPostToAdmin(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    print("Post 2")
     post = data.get("Post")
     mention = data.get("Mention")
     msg = f"Foydalanuvchi {mention} quyidagi postni yubormoqchi:\n\n"
@@ -248,13 +248,24 @@ async def sendPostToAdmin(callback: CallbackQuery, state: FSMContext):
     await bot.send_message(chat_id=ADMINS, text=msg, parse_mode="HTML", reply_markup=adminKeys)
     await state.set_state(Vacancy.VerifyByAdmin)
 
+@dp.callback_query(F.data=="rejection", Vacancy.Comment)
+async def rejectPost(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_reply_markup()
+    await callback.message.answer("Post rad etildi.")
+
 @dp.callback_query(F.data == "accept", Vacancy.VerifyByAdmin)
 async def sendtPostToChannel(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     post = data.get("Post")
-    await bot.send_message(chat_id="@kotib_vakansiyalar", text=post)
+    await bot.send_message(chat_id="@kotib_vakansiyalar",text=post, parse_mode="HTML")
     await callback.answer("Post kanalga joylandi", show_alert=True)
 
+@dp.callback_query(F.data=="rejectionByAdmin", Vacancy.VerifyByAdmin)
+async def rejectPostByAdmin(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.answer("Post rad etildi.", show_alert=True)
+    await callback.message.edit_reply_markup()
 
 async def main():
     await async_main()
