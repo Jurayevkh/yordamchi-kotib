@@ -16,9 +16,8 @@ async def set_card(user_id,card_name, card_number, card_owner):
         card=await session.scalar(select(Card).where((Card.user_id==user_id)&(Card.cardname == card_name) & (Card.cardnumber==card_number) & (Card.cardowner==card_owner)))
 
     if not card:
-        session.add(Card(user_id=user_id,cardname=card_name,cardnumber=card_number,cardowner=card_owner))
+        new_user=session.add(Card(user_id=user_id,cardname=card_name,cardnumber=card_number,cardowner=card_owner))
         await session.commit()
-
 
 
 async def set_location(user_id, title, latitude, longitude):

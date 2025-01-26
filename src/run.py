@@ -148,6 +148,11 @@ async def VacancyComment(message: Message, state: FSMContext):
 async def SaveDataToInline(message: Message):
     await message.reply(text="Qanday turdagi ma'lumotni saqlamoqchisiz?:", reply_markup=locationOrCard)
 
+@dp.message(F.text=="Bosh sahifaga qaytish🔙")
+async def BackToMenu(message:Message):
+    await message.answer(text="Bosh sahifadasiz!",reply_markup=main_menu)
+
+
 @dp.message(F.text=="Manzil saqlash📍")
 async def StartSaveLocation(message: Message, state: FSMContext):
     await message.reply("Manzil nomini kiriting:")
@@ -165,6 +170,7 @@ async def GetLocation(message: Message, state: FSMContext):
         data = await state.get_data()
         title=data.get("Title")
         await request.set_location(message.from_user.id,title,message.location.latitude,message.location.longitude)
+        print("!!!!")
         await state.update_data(Latitude=message.location.latitude)
         await state.update_data(Longitude=message.location.longitude)
         await message.reply("Manzil muvaffaqiyatli saqlandi ✅", reply_markup=main_menu)
@@ -216,59 +222,73 @@ async def GetCardData(message:Message, state: FSMContext):
     cardOwner=message.text
     await request.set_card(message.from_user.id,cardName,cardNumber,cardOwner)
     await message.reply("Karta muvaffaqiyatli saqlandi ✅", reply_markup=main_menu)
+    await state.clear()
 
-@dp.inline_query(F.query == "Kartalar")
-async def show_cardDatas(inline_query: InlineQuery):
-    cards=await get_cardsByUserID(inline_query.from_user.id)
 
-    results=[]
+@dp.message(F.text=="Kartalarim🗂")
+async def GetAllCards(message:Message):
+    cards=await request.get_cardsByUserID(message.from_user.id)
+
+    if not cards:
+        await message.answer(text="Siz hali karta qo'shmagansiz!")
     for card in cards:
-        if (card.user_id == inline_query.from_user.id):
-            results.append(InlineQueryResultArticle(
-                id=str(card.id),
-                title=card.cardname,
-                input_message_content=InputMessageContent(
-                    message_text = f"Karta nomi:{card.cardname}\n\nKarta raqami:{card.cardnumber}\n\n{card.cardowner}"),
-                description=f"{card.cardnumber} -- {card.cardowner}"
-            ))
-        print("!!!!")
+        await message.answer(text=f"<b>Karta nomi:</b> {card.cardname}\n\n<b>Karta raqam:</b> {card.cardnumber}\n\n<b>Karda egasi:</b> {card.cardowner}", parse_mode="HTML")
 
-    await bot.answer_inline_query(inline_query.id, results)
-
-# @dp.message(Vacancy.Comment)
-# async def VacancyComment(message: Message, state: FSMContext):
-#    data = await state.get_data()
-#    title = data.get("Title")
-#    requirements = data.get("Requirements")
-#    salary = data.get("Salary")
-#    company = data.get("Company")
-#    responsible = data.get("Responsible")
-#    comment = message.text
+# @dp.inline_query(F.query == "Kartalar")
+# async def show_cardDatas(inline_query: InlineQuery):
+#     cards=await get_cardsByUserID(inline_query.from_user.id)
 #
-#    msg = (
-#        f"Lavozim: {title}\n"
-#        f"Talablar: {requirements}\n"
-#        f"Maosh: {salary}\n"
-#        f"Kompaniya: {company}\n"
-#        f"Ma'sul shaxs: {responsible}\n"
-#        f"Qo'shimcha izoh: {comment}\n\n"
-#    )
+#     results=[]
+#     for card in cards:
+#         if (card.user_id == inline_query.from_user.id):
+#             results.append(InlineQueryResultArticle(
+#                 id=str(card.id),
+#                 title=card.cardname,
+#                 input_message_content=InputMessageContent(
+#                     message_text = f"Karta nomi:{card.cardname}\n\nKarta raqami:{card.cardnumber}\n\n{card.cardowner}"),
+#                 description=f"{card.cardnumber} -- {card.cardowner}"
+#             ))
+#         print("!!!!")
 #
-#    await state.update_data(Mention=f"""<a href="tg://user?id={message.from_user.id}">{message.from_user.full_name}</a>""")
-#    await state.update_data(Post=msg)
-#    msg+="Ushbu postni tasdiqlashga yuborasizmi?"
-#
-#    await message.answer(text=msg, reply_markup=post_inline)
+#     await bot.answer_inline_query(inline_query.id, results)
 
-#####################################
+@dp.message(Vacancy.Comment)
+async def VacancyComment(message: Message, state: FSMContext):
+   data = await state.get_data()
+   title = data.get("Title")
+   requirements = data.get("Requirements")
+   salary = data.get("Salary")
+   company = data.get("Company")
+   responsible = data.get("Responsible")
+   comment = message.text
 
-# @dp.callback_query(F.data=="action", Vacancy.Comment)
-# async def sendPostToAdmin(callback: CallbackQuery, state: FSMContext):
+   msg = (
+       f"Lavozim: {title}\n"
+       f"Talablar: {requirements}\n"
+       f"Maosh: {salary}\n"
+       f"Kompaniya: {company}\n"
+       f"Ma'sul shaxs: {responsible}\n"
+       f"Qo'shimcha izoh: {comment}\n\n"
+   )
+
+   await state.update_data(Mention=f"""<a href="tg://user?id={message.from_user.id}">{message.from_user.full_name}</a>""")
+   await state.update_data(Post=msg)
+   msg+="Ushbu postni tasdiqlashga yuborasizmi?"
+
+   await message.answer(text=msg, reply_markup=post_inline)
+
+
+
+# @dp.callback_query(F.data == "accept")
+# async def acceptPost(callback: CallbackQuery, state: FSMContext):
 #     data = await state.get_data()
 #     post = data.get("Post")
-#     await sendPostToChannel(callback, state)
 #
-#
+#     # Send to channel if accepted
+#     await bot.send_message(chat_id="@kotib_vakansiyalar", text=post)
+#     await callback.answer("Post kanalga joylandi", show_alert=True)
+
+# @dp.callback_query(F.data == "accept", Vacancy.Comment)
 # async def sendPostToChannel(callback: CallbackQuery, state: FSMContext):
 #     data = await state.get_data()
 #     post = data.get("Post")
@@ -280,6 +300,16 @@ async def show_cardDatas(inline_query: InlineQuery):
 #         print("Admin tasdiqladi")
 #         await bot.send_message(chat_id="@kotib_vakansiyalar",text=post)
 #         await callback.answer("Post kanalga joylandi", show_alert=True)
+
+#####################################
+
+# @dp.callback_query(F.data=="action", Vacancy.Comment)
+# async def sendPostToAdmin(callback: CallbackQuery, state: FSMContext):
+#     data = await state.get_data()
+#     post = data.get("Post")
+#     await sendPostToChannel(callback, state)
+#
+#
 
 #############################
 
@@ -296,14 +326,7 @@ async def show_cardDatas(inline_query: InlineQuery):
 #     await callback.answer("Post admin uchun yuborildi. Iltimos, tasdiqlang.")
 #
 #
-# @dp.callback_query(F.data == "accept")
-# async def acceptPost(callback: CallbackQuery, state: FSMContext):
-#     data = await state.get_data()
-#     post = data.get("Post")
-#
-#     # Send to channel if accepted
-#     await bot.send_message(chat_id="@kotib_vakansiyalar", text=post)
-#     await callback.answer("Post kanalga joylandi", show_alert=True)
+
 
 
 async def main():
