@@ -261,7 +261,7 @@ async def sendtPostToChannel(callback: CallbackQuery, state: FSMContext):
     await bot.send_message(chat_id="@kotib_vakansiyalar",text=post, parse_mode="HTML")
     await callback.answer("Post kanalga joylandi", show_alert=True)
 
-@dp.callback_query(F.data=="rejectionByAdmin", Vacancy.VerifyByAdmin)
+@dp.callback_query(F.data=="rejectionByAdmin")
 async def rejectPostByAdmin(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer("Post rad etildi.", show_alert=True)
